@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX CAPITAL — Investment Growth Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C96D;
+    --gold-dim: #8A6F32;
+    --bg: #070A0F;
+    --bg-card: #0C1018;
+    --bg-panel: #101520;
+    --bg-input: #0A0E16;
+    --border: #1E2A3A;
+    --border-gold: #2A2010;
+    --text: #D4C5A9;
+    --text-dim: #6B7A8D;
+    --text-bright: #EDE5D0;
+    --green: #4CAF7D;
+    --red: #CF6679;
+    --blue: #4A90D9;
+    --accent: #1A2840;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(201,168,76,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 110%, rgba(74,144,217,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 28px 0 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .logo-top {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .logo-sub {
+    font-size: 9px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .header-meta {
+    text-align: right;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* LAYOUT */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* PANELS */
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .panel-badge {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+  }
+
+  .panel-body { padding: 20px; }
+
+  /* INPUTS */
+  .input-group {
+    margin-bottom: 18px;
+  }
+
+  .input-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .input-hint {
+    font-size: 8px;
+    color: var(--gold-dim);
+    letter-spacing: 1px;
+  }
+
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-prefix {
+    position: absolute;
+    left: 12px;
+    font-size: 12px;
+    color: var(--gold);
+    font-weight: 700;
+    pointer-events: none;
+  }
+
+  .input-suffix {
+    position: absolute;
+    right: 12px;
+    font-size: 11px;
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+
+  input[type="number"], select {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-bright);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input[type="number"].has-prefix { padding-left: 28px; }
+  input[type="number"].has-suffix { padding-right: 36px; }
+
+  input[type="number"]:focus, select:focus {
+    border-color: var(--gold-dim);
+    box-shadow: 0 0 0 1px rgba(201,168,76,0.1), inset 0 0 20px rgba(201,168,76,0.03);
+  }
+
+  select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23C9A84C'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  select option { background: var(--bg-card); }
+
+  /* TOGGLE */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  .toggle-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .toggle {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  .toggle input { display: none; }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    transition: 0.3s;
+  }
+
+  .toggle input:checked ~ .toggle-track {
+    background: rgba(201,168,76,0.15);
+    border-color: var(--gold-dim);
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 12px;
+    height: 12px;
+    background: var(--text-dim);
+    transition: 0.3s;
+  }
+
+  .toggle input:checked ~ .toggle-thumb {
+    left: 23px;
+    background: var(--gold);
+  }
+
+  /* CALCULATE BUTTON */
+  .calc-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+
+  .calc-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(201,168,76,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .calc-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+  .calc-btn:hover::before { opacity: 1; }
+  .calc-btn:active { transform: scale(0.99); }
+
+  /* SUMMARY CARDS */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card.highlight {
+    border-color: var(--gold-dim);
+  }
+
+  .stat-card.highlight::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+  }
+
+  .stat-label {
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1;
+  }
+
+  .stat-value.gold { color: var(--gold); }
+  .stat-value.green { color: var(--green); }
+
+  .stat-sub {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  /* CHARTS */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 220px;
+  }
+
+  /* TABLE */
+  .table-wrap {
+    overflow-x: auto;
+    max-height: 340px;
+    overflow-y: auto;
+  }
+
+  .table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+  .table-wrap::-webkit-scrollbar-track { background: var(--bg-card); }
+  .table-wrap::-webkit-scrollbar-thumb { background: var(--gold-dim); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-panel);
+    padding: 10px 12px;
+    text-align: right;
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  thead th:first-child { text-align: left; }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(30,42,58,0.5);
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover { background: rgba(201,168,76,0.03); }
+
+  tbody td {
+    padding: 8px 12px;
+    text-align: right;
+    color: var(--text);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  tbody td:first-child {
+    text-align: left;
+    color: var(--text-dim);
+  }
+
+  tbody td.pos { color: var(--green); }
+  tbody td.gold-text { color: var(--gold-light); }
+
+  /* PLACEHOLDER */
+  .placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: var(--text-dim);
+    text-align: center;
+    gap: 12px;
+  }
+
+  .placeholder-icon {
+    font-size: 40px;
+    opacity: 0.3;
+  }
+
+  .placeholder-text {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  /* SECTION DIVIDER */
+  .section-label {
+    font-size: 8px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 12px 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  /* FORMULA NOTE */
+  .formula-note {
+    font-size: 9px;
+    color: var(--text-dim);
+    font-style: italic;
+    font-family: 'Cormorant Garamond', serif;
+    padding: 10px;
+    border-left: 2px solid var(--gold-dim);
+    background: rgba(201,168,76,0.03);
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+
+  /* VALIDATION ERROR */
+  .error-msg {
+    font-size: 9px;
+    color: var(--red);
+    letter-spacing: 1px;
+    margin-top: 5px;
+    display: none;
+  }
+
+  .input-group.invalid input { border-color: var(--red); }
+  .input-group.invalid .error-msg { display: block; }
+
+  /* ANIMATION */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .results-area {
+    animation: fadeSlideIn 0.4s ease;
+  }
+
+  /* RESPONSIVE */
+
+  /* iOS momentum scrolling for table */
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── TABLET LANDSCAPE ≤ 1024px ── */
+  @media (max-width: 1024px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .container { padding: 0 20px 48px; }
+    .stat-value { font-size: 20px; }
+    .panel-body { padding: 18px; }
+  }
+
+  /* ── TABLET PORTRAIT ≤ 768px ── */
+  @media (max-width: 768px) {
+    .container { padding: 0 16px 40px; }
+
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .header-meta { text-align: left; }
+    .logo-top { font-size: 22px; }
+    .stat-value { font-size: 19px; }
+    .chart-wrap { height: 200px; }
+    .ticker { font-size: 7px; }
+
+    table { font-size: 10px; }
+    thead th { padding: 8px 10px; }
+    tbody td { padding: 7px 10px; }
+
+    /* iOS auto-zoom prevention — CRITICAL */
+    input[type="number"],
+    select { font-size: 16px !important; }
+
+    /* Toggle — bigger tap target */
+    .toggle {
+      width: 44px;
+      height: 24px;
+    }
+    .toggle-thumb {
+      top: 4px;
+      left: 4px;
+      width: 14px;
+      height: 14px;
+    }
+    .toggle input:checked ~ .toggle-thumb {
+      left: 24px;
+    }
+
+    /* Calc button min tap height */
+    .calc-btn { min-height: 44px; }
+  }
+
+  /* ── MOBILE ≤ 600px ── */
+  @media (max-width: 600px) {
+    .container { padding: 0 12px 32px; }
+
+    header {
+      padding: 20px 0 16px;
+    }
+
+    .logo-top { font-size: 18px; letter-spacing: 4px; }
+    .logo-sub { font-size: 8px; letter-spacing: 2px; }
+
+    .main-grid { gap: 16px; }
+
+    .summary-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-card { padding: 12px; }
+    .stat-value { font-size: 17px; }
+    .stat-label { font-size: 7px; }
+
+    .panel-header { padding: 12px 14px; }
+    .panel-body { padding: 14px; }
+    .panel-title { font-size: 8px; }
+
+    .chart-wrap { height: 180px; }
+
+    .calc-btn {
+      padding: 14px;
+      font-size: 10px;
+      letter-spacing: 3px;
+    }
+
+    input[type="number"],
+    select { font-size: 16px !important; }
+
+    .input-label { font-size: 8px; }
+
+    .formula-note {
+      font-size: 8px;
+      line-height: 1.5;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .table-wrap { max-height: 280px; }
+    table { font-size: 10px; }
+
+    .section-label { font-size: 7px; }
+    .toggle-label { font-size: 8px; }
+  }
+
+  /* ── SMALL MOBILE ≤ 420px ── */
+  @media (max-width: 420px) {
+    .summary-grid { grid-template-columns: 1fr; }
+    .stat-value { font-size: 16px; }
+    .logo-top { font-size: 16px; letter-spacing: 3px; }
+    .container { padding: 0 10px 24px; }
+    .chart-wrap { height: 160px; }
+    .panel-body { padding: 12px; }
+    .panel-header { padding: 10px 12px; }
+    header { margin-bottom: 24px; }
+    .ticker { font-size: 7px; }
+    .main-grid { gap: 12px; }
+  }
+
+  /* ── TINY MOBILE ≤ 360px ── */
+  @media (max-width: 360px) {
+    .logo-top { font-size: 14px; letter-spacing: 2px; }
+    .logo-sub { display: none; }
+    .stat-value { font-size: 15px; }
+    .chart-wrap { height: 150px; }
+    .calc-btn { font-size: 9px; letter-spacing: 2px; }
+    .panel-body { padding: 10px; }
+  }
+
+  /* Ticker tape */
+  .ticker {
+    font-size: 8px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    border-top: 1px solid var(--border);
+    padding: 8px 0;
+    margin-bottom: 28px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .ticker span { animation: ticker 20s linear infinite; display: inline-block; }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-top">APEX CAPITAL</div>
+      <div class="logo-sub">Investment Growth Calculator — Professional Edition</div>
+    </div>
+    <div class="header-meta">
+      <div><span class="status-dot"></span>SYSTEM ACTIVE</div>
+      <div style="margin-top:4px;" id="live-time"></div>
+    </div>
+  </header>
+
+  <div class="ticker">
+    <span>COMPOUND INTEREST ◆ THE EIGHTH WONDER OF THE WORLD — EINSTEIN &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; A = P(1 + r/n)^(nt) ◆ COMPOUND INTEREST ◆ THE EIGHTH WONDER OF THE WORLD — EINSTEIN &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; A = P(1 + r/n)^(nt) ◆</span>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- INPUT PANEL -->
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Portfolio Parameters</span>
+          <span class="panel-badge">INPUTS</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="section-label">Core Investment</div>
+
+          <div class="input-group" id="g-capital">
+            <div class="input-label">
+              Initial Capital
+              <span class="input-hint">Starting amount</span>
+            </div>
+            <div class="input-wrap">
+              <span class="input-prefix">$</span>
+              <input type="number" id="initial" class="has-prefix" value="10000" min="0" step="100" placeholder="10000">
+            </div>
+            <div class="error-msg" id="e-capital">Must be ≥ 0</div>
+          </div>
+
+          <div class="input-group" id="g-rate">
+            <div class="input-label">
+              Annual Interest Rate
+              <span class="input-hint">Expected return</span>
+            </div>
+            <div class="input-wrap">
+              <input type="number" id="rate" class="has-suffix" value="7" min="0" max="100" step="0.1" placeholder="7">
+              <span class="input-suffix">%</span>
+            </div>
+            <div class="error-msg" id="e-rate">Must be 0–100%</div>
+          </div>
+
+          <div class="input-group" id="g-years">
+            <div class="input-label">
+              Investment Duration
+              <span class="input-hint">Time horizon</span>
+            </div>
+            <div class="input-wrap">
+              <input type="number" id="years" class="has-suffix" value="20" min="1" max="100" step="1" placeholder="20">
+              <span class="input-suffix">YRS</span>
+            </div>
+            <div class="error-msg" id="e-years">Must be 1–100 years</div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label">Compounding Frequency</div>
+            <select id="freq">
+              <option value="1">Annually (1×/yr)</option>
+              <option value="2">Semi-Annually (2×/yr)</option>
+              <option value="4">Quarterly (4×/yr)</option>
+              <option value="12" selected>Monthly (12×/yr)</option>
+              <option value="365">Daily (365×/yr)</option>
+            </select>
+          </div>
+
+          <div class="section-label">Contributions (Optional)</div>
+
+          <div class="input-group">
+            <div class="input-label">Contribution Amount</div>
+            <div class="input-wrap">
+              <span class="input-prefix">$</span>
+              <input type="number" id="contrib" class="has-prefix" value="200" min="0" step="10" placeholder="0">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label">Contribution Frequency</div>
+            <select id="contrib-freq">
+              <option value="monthly" selected>Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+
+          <div class="section-label">Inflation Adjustment</div>
+
+          <div class="input-group" id="g-inflation">
+            <div class="input-label">
+              Inflation Rate
+              <span class="input-hint">Annual avg.</span>
+            </div>
+            <div class="input-wrap">
+              <input type="number" id="inflation" class="has-suffix" value="2.5" min="0" max="50" step="0.1" placeholder="2.5">
+              <span class="input-suffix">%</span>
+            </div>
+            <div class="error-msg" id="e-inflation">Must be 0–50%</div>
+          </div>
+
+          <div class="toggle-row">
+            <span class="toggle-label">Apply Inflation Adjustment</span>
+            <label class="toggle">
+              <input type="checkbox" id="use-inflation" checked>
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+
+          <button class="calc-btn" onclick="calculate()">▶ &nbsp; Calculate Growth</button>
+
+          <div class="formula-note">
+            A = P(1 + r/n)<sup>nt</sup> + PMT × [((1 + r/n)<sup>nt</sup> − 1) / (r/n)]<br>
+            Where P = principal, r = rate, n = frequency, t = time, PMT = periodic payment
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OUTPUT PANEL -->
+    <div>
+      <div id="results-container">
+        <div class="panel" style="margin-bottom:24px;">
+          <div class="placeholder">
+            <div class="placeholder-icon">◈</div>
+            <div class="placeholder-text">Enter parameters and calculate</div>
+            <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:4px;">Your investment projections will appear here</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── LIVE CLOCK ───────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('live-time').textContent =
+    now.toLocaleTimeString('en-US', { hour12: false }) + ' UTC';
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ─── FORMATTERS ───────────────────────────────────────────────
+const fmt = (n) => new Intl.NumberFormat('en-US', {
+  style: 'currency', currency: 'USD', maximumFractionDigits: 2
+}).format(n);
+
+const fmtShort = (n) => {
+  if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return fmt(n);
+};
+
+// ─── VALIDATION ───────────────────────────────────────────────
+function validate() {
+  let ok = true;
+  const rules = [
+    { id:'initial', gid:'g-capital', eid:'e-capital', min:0 },
+    { id:'rate',    gid:'g-rate',    eid:'e-rate',    min:0, max:100 },
+    { id:'years',   gid:'g-years',   eid:'e-years',   min:1, max:100 },
+    { id:'inflation',gid:'g-inflation',eid:'e-inflation',min:0,max:50 },
+  ];
+  rules.forEach(r => {
+    const v = parseFloat(document.getElementById(r.id).value);
+    const g = document.getElementById(r.gid);
+    const invalid = isNaN(v) || v < r.min || (r.max !== undefined && v > r.max);
+    g.classList.toggle('invalid', invalid);
+    if (invalid) ok = false;
+  });
+  return ok;
+}
+
+// ─── CORE CALCULATION ─────────────────────────────────────────
+function calculate() {
+  if (!validate()) return;
+
+  const P     = parseFloat(document.getElementById('initial').value);
+  const r     = parseFloat(document.getElementById('rate').value) / 100;
+  const T     = parseInt(document.getElementById('years').value);
+  const n     = parseInt(document.getElementById('freq').value);
+  const pmtRaw = parseFloat(document.getElementById('contrib').value) || 0;
+  const cFreq = document.getElementById('contrib-freq').value;
+  const inf   = parseFloat(document.getElementById('inflation').value) / 100;
+  const useInf = document.getElementById('use-inflation').checked;
+
+  // Monthly PMT normalised
+  const pmtMonthly = cFreq === 'monthly' ? pmtRaw : pmtRaw / 12;
+
+  const rows = [];
+  let balance = P;
+  let totalContribs = P;
+
+  for (let yr = 1; yr <= T; yr++) {
+    const startBal = balance;
+    let yearContrib = 0;
+    let yearInterest = 0;
+
+    // Simulate month by month for precision
+    for (let m = 0; m < 12; m++) {
+      // Interest for this month (compounded at rate n)
+      const monthRate = Math.pow(1 + r/n, n/12) - 1;
+      const interest = balance * monthRate;
+      yearInterest += interest;
+      balance += interest;
+      // Contribution
+      balance += pmtMonthly;
+      yearContrib += pmtMonthly;
+    }
+
+    totalContribs += yearContrib;
+    const inflationFactor = useInf ? Math.pow(1 + inf, yr) : 1;
+    const realBalance = balance / inflationFactor;
+
+    rows.push({
+      year: yr,
+      start: startBal,
+      interest: yearInterest,
+      contrib: yearContrib,
+      end: balance,
+      real: realBalance
+    });
+  }
+
+  const finalNominal  = balance;
+  const finalReal     = useInf ? balance / Math.pow(1+inf, T) : balance;
+  const totalInterest = finalNominal - totalContribs;
+
+  renderResults({
+    rows, finalNominal, finalReal, totalContribs, totalInterest,
+    P, T, r, n, pmtRaw, cFreq, inf, useInf
+  });
+}
+
+// ─── CHARTS ───────────────────────────────────────────────────
+let chartGrowth, chartBreakdown;
+
+function destroyCharts() {
+  if (chartGrowth)    { chartGrowth.destroy();    chartGrowth = null; }
+  if (chartBreakdown) { chartBreakdown.destroy();  chartBreakdown = null; }
+}
+
+const GOLD   = 'rgba(201,168,76,1)';
+const GOLDF  = 'rgba(201,168,76,0.15)';
+const GREEN  = 'rgba(76,175,125,1)';
+const GREENF = 'rgba(76,175,125,0.15)';
+const BLUE   = 'rgba(74,144,217,1)';
+const BLUEF  = 'rgba(74,144,217,0.15)';
+const DIM    = 'rgba(107,122,141,0.3)';
+
+Chart.defaults.color = '#6B7A8D';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 10;
+
+function buildGrowthChart(rows, useInf) {
+  const labels = rows.map(r => `Y${r.year}`);
+  const ctx = document.getElementById('chartGrowth').getContext('2d');
+
+  const gradG = ctx.createLinearGradient(0, 0, 0, 220);
+  gradG.addColorStop(0, 'rgba(201,168,76,0.3)');
+  gradG.addColorStop(1, 'rgba(201,168,76,0)');
+
+  const gradR = ctx.createLinearGradient(0, 0, 0, 220);
+  gradR.addColorStop(0, 'rgba(76,175,125,0.2)');
+  gradR.addColorStop(1, 'rgba(76,175,125,0)');
+
+  const datasets = [{
+    label: 'Nominal Value',
+    data: rows.map(r => r.end),
+    borderColor: GOLD,
+    backgroundColor: gradG,
+    fill: true,
+    tension: 0.4,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+    borderWidth: 2,
+  }];
+
+  if (useInf) {
+    datasets.push({
+      label: 'Real Value (Inflation-Adj.)',
+      data: rows.map(r => r.real),
+      borderColor: GREEN,
+      backgroundColor: gradR,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      borderWidth: 2,
+      borderDash: [4,3],
+    });
+  }
+
+  chartGrowth = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 16, color: '#6B7A8D' } },
+        tooltip: {
+          backgroundColor: '#0C1018',
+          borderColor: '#1E2A3A',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmtShort(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(30,42,58,0.5)' }, ticks: { maxTicksLimit: 8 } },
+        y: {
+          grid: { color: 'rgba(30,42,58,0.5)' },
+          ticks: { callback: v => fmtShort(v) }
+        }
+      }
+    }
+  });
+}
+
+function buildBreakdownChart(rows, P) {
+  const last = rows[rows.length - 1];
+  const totalContrib = P + rows.reduce((s,r) => s + r.contrib, 0);
+  const totalInterest = last.end - totalContrib;
+
+  const ctx = document.getElementById('chartBreakdown').getContext('2d');
+
+  // Stacked bar: contributions vs interest per year
+  const labels = rows.map(r => `Y${r.year}`);
+  const cumContribs = [];
+  const cumInterest = [];
+  let rc = P, ri = 0;
+  rows.forEach(r => {
+    rc += r.contrib;
+    ri += r.interest;
+    cumContribs.push(rc);
+    cumInterest.push(ri);
+  });
+
+  chartBreakdown = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Total Contributed',
+          data: cumContribs,
+          backgroundColor: 'rgba(74,144,217,0.6)',
+          borderColor: BLUE,
+          borderWidth: 1,
+        },
+        {
+          label: 'Interest Earned',
+          data: cumInterest,
+          backgroundColor: 'rgba(201,168,76,0.5)',
+          borderColor: GOLD,
+          borderWidth: 1,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 16, color: '#6B7A8D' } },
+        tooltip: {
+          backgroundColor: '#0C1018',
+          borderColor: '#1E2A3A',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmtShort(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(30,42,58,0.5)' }, ticks: { maxTicksLimit: 8 } },
+        y: {
+          stacked: false,
+          grid: { color: 'rgba(30,42,58,0.5)' },
+          ticks: { callback: v => fmtShort(v) }
+        }
+      }
+    }
+  });
+}
+
+// ─── RENDER ───────────────────────────────────────────────────
+function renderResults(d) {
+  destroyCharts();
+
+  const interestPct = d.totalContribs > 0
+    ? ((d.totalInterest / d.finalNominal) * 100).toFixed(1)
+    : '0.0';
+
+  const contribPct  = ((d.totalContribs / d.finalNominal) * 100).toFixed(1);
+
+  const freqLabel = {
+    1:'Annually', 2:'Semi-Annually', 4:'Quarterly', 12:'Monthly', 365:'Daily'
+  }[d.n] || 'Monthly';
+
+  const html = `
+  <div class="results-area">
+    <!-- SUMMARY STATS -->
+    <div class="summary-grid" style="margin-bottom:20px;">
+      <div class="stat-card highlight">
+        <div class="stat-label">Final Portfolio Value</div>
+        <div class="stat-value gold">${fmtShort(d.finalNominal)}</div>
+        <div class="stat-sub">Nominal · After ${d.T} Years</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="stat-label">${d.useInf ? 'Inflation-Adjusted Value' : 'Total Interest Earned'}</div>
+        <div class="stat-value green">${d.useInf ? fmtShort(d.finalReal) : fmtShort(d.totalInterest)}</div>
+        <div class="stat-sub">${d.useInf ? 'Real Purchasing Power' : 'Compound Returns'}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Contributions</div>
+        <div class="stat-value">${fmtShort(d.totalContribs)}</div>
+        <div class="stat-sub">${contribPct}% of Final Value</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Interest Earned</div>
+        <div class="stat-value">${fmtShort(d.totalInterest)}</div>
+        <div class="stat-sub">${interestPct}% of Final Value</div>
+      </div>
+    </div>
+
+    <!-- GROWTH CHART -->
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-header">
+        <span class="panel-title">Portfolio Growth Over Time</span>
+        <span class="panel-badge">${freqLabel} Compounding</span>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="chartGrowth"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN CHART -->
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-header">
+        <span class="panel-title">Contributions vs Interest Breakdown</span>
+        <span class="panel-badge">CUMULATIVE</span>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="chartBreakdown"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Year-by-Year Breakdown</span>
+        <span class="panel-badge">${d.rows.length} PERIODS</span>
+      </div>
+      <div class="panel-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Starting Balance</th>
+                <th>Contributions</th>
+                <th>Interest Earned</th>
+                <th>Ending Balance</th>
+                ${d.useInf ? '<th>Real Value</th>' : ''}
+              </tr>
+            </thead>
+            <tbody>
+              ${d.rows.map(r => `
+              <tr>
+                <td>${r.year}</td>
+                <td>${fmt(r.start)}</td>
+                <td class="pos">+${fmt(r.contrib)}</td>
+                <td class="gold-text">+${fmt(r.interest)}</td>
+                <td>${fmt(r.end)}</td>
+                ${d.useInf ? `<td style="color:var(--green)">${fmt(r.real)}</td>` : ''}
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+
+  document.getElementById('results-container').innerHTML = html;
+
+  // Build charts after DOM injection
+  requestAnimationFrame(() => {
+    buildGrowthChart(d.rows, d.useInf);
+    buildBreakdownChart(d.rows, d.P);
+  });
+}
+
+// ─── AUTO-CALC ON LOAD ────────────────────────────────────────
+window.addEventListener('load', calculate);
+</script>
+</body>
+</html>
