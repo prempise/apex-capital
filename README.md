@@ -2,7 +2,7 @@
 
 Single HTML file. Open in browser. No install, no login, no data sent anywhere.
 
----
+
 
 ## Inputs
 
@@ -16,7 +16,7 @@ Single HTML file. Open in browser. No install, no login, no data sent anywhere.
 | Contribution Frequency | Monthly or yearly |
 | Inflation Rate | Annual inflation % to apply (optional, toggle on/off) |
 
----
+
 
 ## Output
 
@@ -27,7 +27,7 @@ Hit **Calculate Growth**. You get:
 - **Bar chart** — Your contributions vs. interest earned, cumulative per year
 - **Table** — Starting balance, contributions, interest, and ending balance for every year
 
----
+
 
 All calculations run locally. Fields validate before calculating and highlight red if out of range.
 
